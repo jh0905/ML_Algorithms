@@ -69,3 +69,4 @@ if __name__ == '__main__':
     test = [50, 10]
     k = 3
     print("预测该样本标签为：", knn(test, train, lables, k))
+    # test
