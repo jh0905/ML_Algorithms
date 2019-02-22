@@ -36,7 +36,7 @@ def create_dataset():
  参数说明：
     test为测试样本(一个向量);
     train为训练集(训练样本的特征组成的矩阵);
-    lables为标签(训练集中每一个样本对应的类型组成的向量);
+    labels为标签(训练集中每一个样本对应的类型组成的向量);
     k为参数,表示选取距离最近的k个样本
     
  函数说明：train为[[1,101],[5,89],[108,5],[115,8]],test为1个样本[10,45],
@@ -45,7 +45,7 @@ def create_dataset():
 """
 
 
-def knn(test, train, lables, k):
+def knn(test, train, labels, k):
     num_train_samples = train.shape[0]
     test = np.tile(test, (num_train_samples, 1))  # np.tile 将test复制num_train_samples行,复制1列
     diff_set = train - test
@@ -53,9 +53,9 @@ def knn(test, train, lables, k):
     sorted_distance_indicies = np.argsort(distance)  # 返回数组,如[1, 0, 2, 3],表示下标为1的元素值最小,其次是0,以此类推
     class_count = {}  # 该字典用来存前k个元素的类别，以及出现的次数
     for i in range(k):
-        lable = lables[sorted_distance_indicies[i]]
+        label = labels[sorted_distance_indicies[i]]
         # dict.get(key,default=None),字典的get()方法,返回指定键的值,如果值不在字典中返回默认值0
-        class_count[lable] = class_count.get(lable, 0) + 1
+        class_count[label] = class_count.get(label, 0) + 1
     # 字典按照value值,降序排列
     # key=operator.itemgetter(1) 根据字典的值进行排序
     # key=operator.itemgetter(0) 根据字典的键进行排序
