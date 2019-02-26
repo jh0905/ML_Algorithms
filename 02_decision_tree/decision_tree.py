@@ -4,7 +4,7 @@
  @author: Jiang Hui
  @language:Python 3.7.2 [GCC 7.3.0] :: Anaconda, Inc. on linux
  @time: 2/22/19 4:50 PM
- @desc:
+ @desc: 手写决策树算法，判断一个具有两个特征('no surfacing','flippers')的样本，是否属于鱼类
 """
 from math import log
 import operator
@@ -12,6 +12,7 @@ import copy
 import pickle
 
 """
+
  引子:
     机器学习算法其实很古老，作为一个码农经常会不停的敲if, else if, else,其实就已经在用到决策树的思想了。
     只是你有没有想过，有这么多条件，用哪个条件特征先做if，哪个条件特征后做if会比较优呢？
