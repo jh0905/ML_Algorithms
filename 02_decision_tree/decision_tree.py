@@ -30,6 +30,7 @@ import pickle
     (2) 熵度量了事物的不确定性,越不确定的事物,它的熵就越大;随机变量X的熵的表达式H(X)如下：
         H(X) = -sum(pi * log pi)   假设X共有n个类别,i的取值则为1~n,pi表示X属于第i类的概率, 最后计算累加和再求相反数;
         函数实现为: calc_shannon_entropy()
+        每个数据集的信息熵是唯一确定的，只与样本的类别有关，与特征无关，不要学久了学糊涂了...
     (3) 在第二步的基础上,我们开始学习如何划分数据集,做法是对每个特征划分数据集,再计算划分之后的信息熵,计算方法如下：
         假如原始数据集共10条数据,特征A共有三种取值,按照特征A划分的话,得到三个子集,样本数分别是3、4、3,那么划分之后的信息熵为
         3/10 * H(A1) + 4/10 * H(A2) + 3/10 * H(A3)
@@ -107,7 +108,7 @@ def split_data_set(data_set, axis, value):
 
 def choose_best_feat_to_split(data_set):
     num_of_feature = len(data_set[0]) - 1  # 最后一列为label,所以特征数-1
-    base_entropy = calc_shannon_entropy(data_set)
+    base_entropy = calc_shannon_entropy(data_set)  # 计算传进来的数据集的信息熵，而不是固定的原始数据集的信息熵
     best_info_gain = 0.0
     best_feature = -1
     for i in range(num_of_feature):
@@ -195,7 +196,7 @@ def classify(input_tree, feat_labels, test_vec):
 
 # 存储决策树到硬盘
 def store_tree(input_tree, file_name):
-    # 这里的mode,要写作'wb',Python2中写'w'就行
+    # 这里的mode,要写作'wb'
     fw = open(file_name, 'wb')
     pickle.dump(input_tree, fw)
     fw.close()
