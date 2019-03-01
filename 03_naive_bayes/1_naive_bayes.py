@@ -4,7 +4,7 @@
  @author: Jiang Hui
  @language:Python 3.7.2 [GCC 7.3.0] :: Anaconda, Inc. on linux
  @time: 2/28/19 10:49 AM
- @desc:
+ @desc:通过一个简单的文本分类任务，来初探朴素贝叶斯的工作原理
 """
 from numpy import *
 
