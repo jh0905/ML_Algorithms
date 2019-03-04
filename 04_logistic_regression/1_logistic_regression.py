@@ -6,6 +6,8 @@
  @time: 3/2/19 2:05 PM
  @desc:
 """
+import numpy as np
+import matplotlib.pyplot as plt
 
 """
  引子:
@@ -58,11 +60,80 @@
   **(3)最大似然估计取对数之后再取反，定义为我们的损失函数
        原因如下：
        这里只挑一个乘数如P(y1|x1,θ)为例进行说明即可
-                -ln(P(y1|x1,θ)) = -y1*(log h(x1)) + (1-y1)*log(1-h(x1))     【注：取对数不是取导数，我在这犯糊涂了】
+                -ln(P(y1|x1,θ)) = -y1*(ln h(x1)) - (1-y1)*ln(1-h(x1))     【注：取对数不是取导数，我在这犯糊涂了】
        已知h(x)的值域为(0,1),那么-log(h(x))的值域呢，就为(0,+∞)，定义算法的损失函数，我们的期望当然是预测越准,惩罚越少;预测越差,惩罚
        越多。我们再看看上式，假如预测h(x1)=0.99,y1=1时，最终惩罚为0.01；预测h(x1)=0.01,y1=1时最终惩罚为4.6，加重了惩罚,所以符合我们
        对损失函数的要求。     
     
     (4)经过上面的描述，逻辑回归的损失函数表达式为:
-        J(θ) =  sum( -yi*(log h(xi)) + (1-yi)*log(1-h(xi)) ,其中i表示第i个样本
+        J(θ) = -sum( yi*(ln h(xi)) + (1-yi)*ln(1-h(xi)) ,其中i表示第i个样本
+        
+ 3.二元逻辑回归的损失函数的最优化问题
+    对于二元逻辑回归的损失函数极小化，有比较多的方法，最常见的有梯度下降法，坐标轴下降法，牛顿法等。本次学习中，我用的方法是梯度下降法，我在
+ 本目录下，写了一个gradient_descent_demo.py代码，以一个函数实例，详细介绍了用梯度下降法求极值的思路与代码实现过程。
+    了解完梯度下降之后，我们需要关心的就是每次迭代时θ的更新公式，关于这个，我手推了θ的更新过程，在本目录gradient_descent_compute.jpg中，
+ 至此，我们正式开始用Python实现逻辑回归的代码。
 """
+
+
+def load_data_set():
+    data_matrix = []
+    label_vector = []
+    fr = open('testSet.txt')
+    for line in fr.readlines():
+        line = line.strip().split('\t')
+        data_matrix.append([1.0, float(line[0]), float(line[1])])  # 为了方便计算，把x_0的值默认为1.0
+        label_vector.append(int(line[-1]))  # 这里和上面必须进行类型转换，因为从file里读出的元素为str类型
+    return data_matrix, label_vector
+
+
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+
+def gradient_descent(data_matrix, label_vector, alpha, num_of_rounds):
+    theta_vector = np.ones((np.shape(data_matrix)[1], 1))  # 初始化θ 为一个长度与特征矩阵的列数相同的元素值全为1的列向量
+    while num_of_rounds:
+        for j in range(len(theta_vector)):
+            descent = 0.0
+            for i in range(len(data_matrix)):
+                descent += (label_vector[i] - sigmoid(np.dot(theta_vector.transpose(), data_matrix[i]))) * \
+                           data_matrix[i][j]
+            theta_vector[j] = theta_vector[j] + alpha * descent
+        num_of_rounds -= 1
+    return theta_vector
+
+
+def plotBestFit(weights):
+    mat, vec = load_data_set()  # 加载数据集
+    data_arr = np.array(mat)  # 转换成numpy的array数组
+    n = np.shape(features)[0]  # 数据个数
+    x_1 = []
+    y_1 = []  # 正样本
+    x_0 = []
+    y_0 = []  # 负样本
+    for i in range(n):  # 根据数据集标签进行分类
+        if int(vec[i]) == 1:
+            x_1.append(data_arr[i, 1]);
+            y_1.append(data_arr[i, 2])  # 1为正样本
+        else:
+            x_0.append(data_arr[i, 1]);
+            y_0.append(data_arr[i, 2])  # 0为负样本
+    fig = plt.figure()
+    ax = fig.add_subplot(111)  # 添加subplot
+    ax.scatter(x_1, y_1, s=20, c='red', marker='s', alpha=.5)  # 绘制正样本
+    ax.scatter(x_0, y_0, s=20, c='green', alpha=.5)  # 绘制负样本
+    x = np.arange(-3.0, 3.0, 0.1)
+    y = (-weights[0] - weights[1] * x) / weights[2]
+    ax.plot(x, y)
+    plt.title('BestFit')  # 绘制title
+    plt.xlabel('X1');
+    plt.ylabel('X2')  # 绘制label
+    plt.show()
+
+
+if __name__ == '__main__':
+    features, labels = load_data_set()
+    weights = gradient_descent(features, labels, 0.01, 1000)
+    print(weights)
+    plotBestFit(weights)
