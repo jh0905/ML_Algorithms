@@ -91,6 +91,18 @@ def sigmoid(z):
     return 1 / (1 + np.exp(-z))
 
 
+"""
+ 这是用到的第一种方法，按照我推导的公式(gradient_element_compute.jpg)来编写的代码，算法如下:
+    (1)初始化参数向量theta为一个元素值全为1,形状为(样本特征数, 1)的列向量，不一定非得是1，全为0也行；
+    (2)开始迭代，迭代停止条件为达到迭代次数
+        (a) 遍历向量theta的每一个元素，执行下面操作：
+            θ_j = θ_j + α * sum[(y_i - sigmoid(θ.T * x_i))*x_i_j]
+            其中j表示θ的第j个元素，y_i表示第i个样本的类别，x_i表示第i个样本的特征向量，x_i_j为x_i的第j个元素
+        (b) 迭代次数减1
+    (3) 返回参数向量θ
+"""
+
+
 def gradient_descent(data_matrix, label_vector, alpha, num_of_rounds):
     theta_vector = np.ones((np.shape(data_matrix)[1], 1))  # 初始化θ 为一个长度与特征矩阵的列数相同的元素值全为1的列向量
     while num_of_rounds:
@@ -104,36 +116,76 @@ def gradient_descent(data_matrix, label_vector, alpha, num_of_rounds):
     return theta_vector
 
 
-def plotBestFit(weights):
+"""
+ 这是第二种梯度下降的方法，按照推导式(gradient_vector_compute.jpg)直接对整个θ向量更新，算法如下：
+    (1)样本特征转为(样本数，特征数)的矩阵X
+    (2)样本类别转为(样本数，1)的矩阵Y
+    (3)初始化一个元素值全为1，形状为(特征数，1)的向量θ
+    (4)开始迭代：
+        (a)计算梯度向量，公式为:
+            gradient_vec = X.T * (sigmoid(Xθ)-Y)
+        (b)更新向量θ，公式为:
+            θ = θ - α*gradient_vec
+        (c)迭代次数减1
+    (5) 返回θ
+    
+"""
+
+
+def gradient_descent_matrix(data_matrix, label_vector, alpha, num_of_rounds):
+    data_matrix = np.mat(data_matrix)  # 转换为(100,3)的矩阵，每一行代表一个样本的特征向量
+    label_vector = np.mat(label_vector).transpose()  # 转换为(100,1)的列向量
+    theta_vector = np.ones((data_matrix.shape[1], 1))  # 初始化θ 为一个长度与特征矩阵的列数相同的元素值全为1的列向量
+    while num_of_rounds:
+        gradient_vector = data_matrix.T * (sigmoid(data_matrix * theta_vector) - label_vector)
+        theta_vector = theta_vector - alpha * gradient_vector
+        num_of_rounds -= 1
+    return theta_vector
+
+
+# 绘制分类决策思路:
+# 1.不同类别的点，用不同的颜色标注，有两种实现方式：
+#   (1)直接将样本点按照类别分成两类，本次代码就是按照这种思路；
+#   (2)建立color数组，根据不同类别，color填充不同颜色的元素；
+# 2.绘制分类决策线
+#   w_0*x_0 + w_1*x_1 + w_2*x_2 = 0是本次的分类决策线，变形一下就是 x_2 = -(w_0*1+w_1*x_1)/w_2
+#   本次代码就是用x=x_1,y=x_2进行绘图，具体如下:
+def plot_best_fit(weight_vec):
     mat, vec = load_data_set()  # 加载数据集
-    data_arr = np.array(mat)  # 转换成numpy的array数组
-    n = np.shape(features)[0]  # 数据个数
-    x_1 = []
-    y_1 = []  # 正样本
-    x_0 = []
-    y_0 = []  # 负样本
+    data_arr = np.array(mat)  # 把list类型的mat,转换成ndArray类型
+    n = np.shape(features)[0]  # 数据的个数
+    x_1 = []  # 类别为1的样本的横坐标
+    y_1 = []  # 类别为1的样本的纵坐标
+    x_0 = []  # 类别为0的样本的横坐标
+    y_0 = []  # 类别为0的样本的纵坐标
     for i in range(n):  # 根据数据集标签进行分类
         if int(vec[i]) == 1:
-            x_1.append(data_arr[i, 1]);
+            x_1.append(data_arr[i, 1])
             y_1.append(data_arr[i, 2])  # 1为正样本
         else:
-            x_0.append(data_arr[i, 1]);
+            x_0.append(data_arr[i, 1])
             y_0.append(data_arr[i, 2])  # 0为负样本
     fig = plt.figure()
     ax = fig.add_subplot(111)  # 添加subplot
     ax.scatter(x_1, y_1, s=20, c='red', marker='s', alpha=.5)  # 绘制正样本
     ax.scatter(x_0, y_0, s=20, c='green', alpha=.5)  # 绘制负样本
+    # 绘制分界线
     x = np.arange(-3.0, 3.0, 0.1)
-    y = (-weights[0] - weights[1] * x) / weights[2]
+    y = (-weight_vec[0] - weight_vec[1] * x) / weight_vec[2]
     ax.plot(x, y)
     plt.title('BestFit')  # 绘制title
-    plt.xlabel('X1');
+    plt.xlabel('X1')
     plt.ylabel('X2')  # 绘制label
     plt.show()
 
 
 if __name__ == '__main__':
     features, labels = load_data_set()
-    weights = gradient_descent(features, labels, 0.01, 1000)
+    # 可通过调整alpha与num_of_rounds的参数组合，来找到最佳拟合线，通常来说，以alpha*num_of_rounds乘积不变的情况下进行调整
+    # weights = gradient_descent(features, labels, alpha=0.001, num_of_rounds=2000)
+    weights = gradient_descent_matrix(features, labels, alpha=0.001, num_of_rounds=2000)
+    weights = np.array(weights)  # 第二种方法生成的weights是一个矩阵的类型，这里为了绘图方便，转成array向量的形式
     print(weights)
-    plotBestFit(weights)
+    plot_best_fit(weights)
+
+# 对比两次不同梯度下降方法的实验结果，发现结果是一致的，但是第二种方法直接用矩阵运算，相对于1来说，少了很多for循环的过程，速度明显快得多
