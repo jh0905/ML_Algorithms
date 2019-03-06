@@ -97,14 +97,18 @@ def sigmoid(z):
     return 1 / (1 + np.exp(-z))
 
 
-#  这是用到的第一种方法，按照我推导的公式(manuscript_1.jpg)来编写的代码，算法如下:
-#     (1)初始化参数向量theta为一个元素值全为1,形状为(样本特征数, 1)的列向量，不一定非得是1，全为0也行；
-#     (2)开始迭代，迭代停止条件为达到迭代次数
-#         (a) 遍历向量theta的每一个元素，执行下面操作：
-#             θ_j = θ_j + α * sum[(y_i - sigmoid(θ.T * x_i))*x_i_j]
-#             其中j表示θ的第j个元素，y_i表示第i个样本的类别，x_i表示第i个样本的特征向量，x_i_j为x_i的第j个元素
-#         (b) 迭代次数减1
-#     (3) 返回参数向量θ
+"""
+ 这是用到的第一种方法，按照我推导的公式(manuscript_1.jpg)来编写的代码，算法如下:
+    (1)初始化参数向量theta为一个元素值全为1,形状为(样本特征数, 1)的列向量，不一定非得是1，全为0也行；
+    (2)开始迭代，迭代停止条件为达到迭代次数
+        (a) 遍历向量theta的每一个元素，执行下面操作：
+            θ_j = θ_j + α * sum[(y_i - sigmoid(θ.T * x_i))*x_i_j]
+            其中j表示θ的第j个元素，y_i表示第i个样本的类别，x_i表示第i个样本的特征向量，x_i_j为x_i的第j个元素
+        (b) 迭代次数减1
+    (3) 返回参数向量θ
+"""
+
+
 def gradient_descent(data_matrix, label_vector, alpha, num_of_rounds):
     theta_vector = np.ones((np.shape(data_matrix)[1], 1))  # 初始化θ 为一个长度与特征矩阵的列数相同的元素值全为1的列向量
     while num_of_rounds:
@@ -118,17 +122,21 @@ def gradient_descent(data_matrix, label_vector, alpha, num_of_rounds):
     return theta_vector
 
 
-# 这是第二种梯度下降的方法，按照推导式(manuscript_2.jpg)直接对整个θ向量更新，算法如下：
-#    (1)样本特征转为(样本数，特征数)的矩阵X
-#    (2)样本类别转为(样本数，1)的矩阵Y
-#    (3)初始化一个元素值全为1，形状为(特征数，1)的向量θ
-#    (4)开始迭代：
-#        (a)计算梯度向量，公式为:
-#            gradient_vec = X.T * (sigmoid(Xθ)-Y)
-#        (b)更新向量θ，公式为:
-#            θ = θ - α*gradient_vec
-#        (c)迭代次数减1
-#    (5) 返回θ
+"""
+这是第二种梯度下降的方法，按照推导式(manuscript_2.jpg)直接对整个θ向量更新，算法如下：
+   (1)样本特征转为(样本数，特征数)的矩阵X
+   (2)样本类别转为(样本数，1)的矩阵Y
+   (3)初始化一个元素值全为1，形状为(特征数，1)的向量θ
+   (4)开始迭代：
+       (a)计算梯度向量，公式为:
+           gradient_vec = X.T * (sigmoid(Xθ)-Y)
+       (b)更新向量θ，公式为:
+           θ = θ - α*gradient_vec
+       (c)迭代次数减1
+   (5) 返回θ
+"""
+
+
 def gradient_descent_matrix(data_matrix, label_vector, alpha, num_of_rounds):
     data_matrix = np.mat(data_matrix)  # 转换为(100,3)的矩阵，每一行代表一个样本的特征向量
     label_vector = np.mat(label_vector).transpose()  # 转换为(100,1)的列向量
@@ -140,14 +148,18 @@ def gradient_descent_matrix(data_matrix, label_vector, alpha, num_of_rounds):
     return theta_vector
 
 
-# 随机梯度下降算法,按照我推导的公式(manuscript_3.jpg)来编写的代码，算法如下伪代码：
-#    (1)参数向量θ初始化为元素值全为1,长度为特征数的列向量
-#    (2)开始迭代:
-#        对数据集中的每一个样本
-#            计算梯度gradient = (sigmoid(X[i]*θ)-yi) * (X[i].T) , 数值 * 列向量的形式
-#            使用alpha*gradient来更新值
-#        迭代次数减1
-#    (3)迭代完成，返回参数向量
+"""
+随机梯度下降算法,按照我推导的公式(manuscript_3.jpg)来编写的代码，算法如下伪代码：
+   (1)参数向量θ初始化为元素值全为1,长度为特征数的列向量
+   (2)开始迭代:
+       对数据集中的每一个样本
+           计算梯度gradient = (sigmoid(X[i]*θ)-yi) * (X[i].T) , 数值 * 列向量的形式
+           使用alpha*gradient来更新值
+       迭代次数减1
+   (3)迭代完成，返回参数向量
+"""
+
+
 def stochastic_gradient_descent(feature_mat, label_vec, alpha, num_of_rounds):
     num_of_samples = len(feature_mat)
     num_of_features = len(feature_mat[0])
@@ -215,7 +227,7 @@ if __name__ == '__main__':
     plot_best_fit(weights)
 
 """
- 对比一下三种实现方式的结果, 基于统一数据集，同样的学习步长，同样的迭代次数
+ 对比一下三种实现方式的结果, 基于同一数据集，同样的学习步长，同样的迭代次数
  |--------------------------------------------------------------------------------------------------|
  |         算法                             运行时长                         参数值                    |
  |  gradient_descent                         3.6s             [7.01092219, 0.70376226, -0.98513334] |   
