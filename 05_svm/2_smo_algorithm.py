@@ -290,24 +290,24 @@ def clip_alpha(alpha_j, h, l):
     return alpha_j
 
 
-# 简化版的SMO函数的伪代码:
+# 简化版的SMO函数的伪代码:                    【十分言简意赅的伪代码，可以看完整个代码，再来理解一边这里的伪代码】
 # 1.创建一个alpha向量并且将其初始化为全0向量
 # 2.当迭代次数小于最大迭代次数时(外循环):
 #      对数据集中的每个数据向量(内循环):
 #          如果该数据向量可以被优化:
 #             随机选择另外一个数据向量
 #             同时优化这两个向量
-#             如果这两个向量都不能被优化，退出内循环
-#      如果所有向量都没被优化，增加迭代数目，继续下一次循环
+#             如果这两个向量都不需要被优化，continue下一个数据向量
+#      如果所有向量都不需要被优化，增加迭代数目，继续下一次循环
 # 输入参数：数据集、类别标签、常数c、容错率、最大的循环迭代次数
 
 def smo_simple(data_mat, class_labels, C, tolerance, max_iter):
     X = np.mat(data_mat)  # X为所有样本点的集合{x1,x2,x3,...,xN}
     y = np.mat(class_labels).transpose()  # y为所有样本点对应的标签的集合
-    b = 0  # 初始化 g(x) = w.T * x + b 中的b为0
+    b = 0  # 初始化b为0
     m, n = np.shape(X)
     alphas = np.mat(np.zeros((m, 1)))  # 根据前面的学习，知道这里要初始化α为零向量.
-    n_iter = 0  # 计数器，记录迭代次数
+    n_iter = 0  # 记录迭代次数，n_iter只有在一轮内循环中，所有的变量对都没进行优化操作时，才会自增1
     while n_iter < max_iter:
         alpha_pairs_changed = 0  # 用于记录alpha是否已经进行优化
         for i in range(m):
@@ -414,8 +414,9 @@ def get_w(data_mat, labels_mat, alphas):
 
 if __name__ == '__main__':
     data, labels = load_data_set('testSet.txt')
-    b_, alphas_ = smo_simple(data, labels, 0.6, 0.001, 40)
+    b_, alphas_ = smo_simple(data, labels, 0.6, 0.001, 2)
     # print("b is {}".format(b))
     # print("alphas:{}".format(alphas[alphas > 0]))
     w_ = get_w(data, labels, alphas_)
+    print(w_, b_)
     plot_best_fit(data, labels, w_, b_)
