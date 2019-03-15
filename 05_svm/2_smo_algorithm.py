@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 对我们的分类决策函数没多大意义，因为我们想要的是真正的支持向量所在的点.
 
     这就给了我们几点启示：
-        第一呢，分类决策函数，由那些支持向量所决定，而我们根据前面的学习也知道，这些支持向量对应的αi，需要满足 0< αi < C
+        第一呢，分类决策函数，由那些支持向量所决定，而我们根据前面的学习也知道，这些支持向量对应的αi，需要满足 0< αi <= C
         第二呢，我们的数据集是十分庞大的，支持向量肯定也就少数那么几个，大多数点都处于远离间隔边界的地方，对应的αi自然也就是0
         
     综合一下，我们可以知道，对于一个存在噪音的训练数据集来说，最终SMO算法求解出来的αi的分布肯定是这样子的：
@@ -30,7 +30,6 @@ import matplotlib.pyplot as plt
         (2)几个噪音的点(处于间隔边界和分类超平面之间、处于分类超平面上、处于超平民错误的一侧)，对应的αi的值为C
         (3)剩下的支持向量对应的αi，则处于(0,C)开区间范围内
 """
-
 
 """     
  1.SMO算法概述
@@ -224,7 +223,7 @@ import matplotlib.pyplot as plt
         
  6.SMO算法总结（将前面所有的内容梳理一下，总结SMO算法的整个过程##）
     
-    输入：N个样本(x1,y1),(x2,y2),...,(xN,yN),精度
+    输入：N个样本(x1,y1),(x2,y2),...,(xN,yN), 精度ε
     输出：α向量的近似解
     
     (1)从第0轮开始迭代，n_iter初始为0，α向量也初始为零向量
@@ -243,29 +242,38 @@ import matplotlib.pyplot as plt
     
     (8)根据b_new更新Ei , 其中i=1,2,3,..,N
     
-    (9)在容忍度范围内检查是否满足如下的终止条件：
-                    sum αi*yi = 0    
-                    0 <= αi <= C
-                    αi_new = 0 ， yi * g(xi) >= 1 
-                    0<αi_new<C ， yi * g(xi)  = 1 
-                    αi_new = C ， yi * g(xi) <= 1 
+    (9)如果某一轮αi迭代更新的变化(|αi_new−αi_old|)小于精度ε，是的话，就认为找到αi的最优解了，并检查是否满足如下的终止条件：
+                                
+                                sum αi*yi = 0    
+                                0 <= αi <= C     
+                                yi * g(xi) >= 1  ， 当对应的αi满足αi=0时
+                                yi * g(xi)  = 1  ， 当对应的αi满足0<αi<C时
+                                yi * g(xi) <= 1  ， 当对应的αi满足αi=C时
+                                                    
+       这里是要对所有的样本点和其对应的αi进行审查哦 ～
     
-    (10)满足终止条件的话，本来迭代结束，否则返回步骤(2)
+    (10)如果在(9)中满足小于精度ε，并且还满足终止条件，那么迭代停止，返回最终的α (这是所有需要更新的αi都更新完之后的α向量)
+        如果在(9)中没有满足小于精度ε，又或者说满足了ε但是没满足终止条件，那就要再次回到第(2)步咯.
+        
+ 7. SMO simple版本的实现
+    
+    下面给出《机器学习实战》中，simple_smo的实现算法，与上面的核心思想大致相同，细节地方略有偏差，但是影响也不大啦~
 """
 
 
 def load_data_set(file_name):
-    data_matrix = []
-    label_matrix = []
+    X = []
+    y = []
     fr = open(file_name)
     for line in fr.readlines():
         line = line.strip().split('\t')
-        data_matrix.append([float(line[0]), float(line[1])])
-        label_matrix.append(float(line[2]))
-    return data_matrix, label_matrix
+        X.append([float(line[0]), float(line[1])])
+        y.append(float(line[2]))
+    return X, y
 
 
 # i是第一个alpha的下标，m是所有alpha的数目，只要函数值不等于输入值i，函数就会进行随机选择
+# 简单版本的SMO算法，是随机选取不同的两个alpha，不同于我们上面提到的|Ei - Ej|最大
 def select_j_rand(i, m):
     j = i
     while j == i:
@@ -273,13 +281,13 @@ def select_j_rand(i, m):
     return j
 
 
-# 修剪α_new , 用于调整大于h或者小于l的alpha值
-def clip_alpha(aj, h, l):
-    if aj > h:
-        aj = h
-    if l > aj:
-        aj = l
-    return aj
+# 修剪α_new_unc的值 , 这个对应第3小节中(3)部分的解释
+def clip_alpha(alpha_j, h, l):
+    if alpha_j > h:
+        alpha_j = h
+    if l > alpha_j:
+        alpha_j = l
+    return alpha_j
 
 
 # 简化版的SMO函数的伪代码:
@@ -292,73 +300,74 @@ def clip_alpha(aj, h, l):
 #             如果这两个向量都不能被优化，退出内循环
 #      如果所有向量都没被优化，增加迭代数目，继续下一次循环
 # 输入参数：数据集、类别标签、常数c、容错率、最大的循环迭代次数
-def smo_simple(data_mat, class_labels, c_value, tolerance, max_iter):
-    data_matrix = np.mat(data_mat)
-    label_matrix = np.mat(class_labels).transpose()
-    b = 0
-    m, n = np.shape(data_matrix)
-    alphas = np.mat(np.zeros((m, 1)))
-    n_iter = 0  # 存储的是在没有任何alpha改变的情况下遍历数据集的次数
+
+def smo_simple(data_mat, class_labels, C, tolerance, max_iter):
+    X = np.mat(data_mat)  # X为所有样本点的集合{x1,x2,x3,...,xN}
+    y = np.mat(class_labels).transpose()  # y为所有样本点对应的标签的集合
+    b = 0  # 初始化 g(x) = w.T * x + b 中的b为0
+    m, n = np.shape(X)
+    alphas = np.mat(np.zeros((m, 1)))  # 根据前面的学习，知道这里要初始化α为零向量.
+    n_iter = 0  # 计数器，记录迭代次数
     while n_iter < max_iter:
         alpha_pairs_changed = 0  # 用于记录alpha是否已经进行优化
         for i in range(m):
-            f_xi = float(np.multiply(alphas, label_matrix).T * (data_matrix * data_matrix[i, :].T)) + b  # 表示预测的类别
-            e_i = f_xi - float(label_matrix[i])  # 计算预测值与真实值的误差
-            # 如果误差很大，超过了容忍度，则对该数据实例所对应的alpha值进行优化，if下面为具体的优化过程
-            if ((label_matrix[i] * e_i < -tolerance) and (alphas[i] < c_value)) or (
-                    (label_matrix[i] * e_i > tolerance) and (alphas[i] > 0)):
-                j = select_j_rand(i, m)  # #随机选择另一个与alpha[i]成对优化的alpha[j]
-                # 步骤1：计算误差Ej
-                f_xj = float(np.multiply(alphas, label_matrix).T * (data_matrix * data_matrix[j, :].T)) + b
-                e_j = f_xj - float(label_matrix[j])  # 与前面的alpha[i]一样，计算这个alpha[j]的误差
+            g_xi = float(np.multiply(alphas, y).T * (X * X[i, :].T)) + b  # 计算现有的模型对于样本xi的预测值
+            e_i = g_xi - float(y[i])  # 计算Ei的值
+            if ((y[i] * e_i < -tolerance) and (alphas[i] < C)) or (
+                    (y[i] * e_i > tolerance) and (alphas[i] > 0)):
+                j = select_j_rand(i, m)  # 随机选择另一个与alpha[i]成对优化的alpha[j]，这里是简化版的，所有随机选择
+                # 计算误差Ej
+                g_xj = float(np.multiply(alphas, y).T * (X * X[j, :].T)) + b
+                e_j = g_xj - float(y[j])
                 # 保存更新前的alpha值，使用深拷贝
                 alpha_i_old = alphas[i].copy()
                 alpha_j_old = alphas[j].copy()
-                # 步骤2：计算上下界l_和h_,它们用于将alpha[j]调整到0和C之间
-                if label_matrix[i] != label_matrix[j]:
-                    l_ = max(0, alphas[j] - alphas[i])
-                    h_ = min(c_value, c_value + alphas[j] - alphas[i])
+                # 计算alpha的线段边界L和H，保证alpha更新之后，在(0,C)范围内
+                if y[i] != y[j]:
+                    L = max(0, alphas[j] - alphas[i])
+                    H = min(C, C + alphas[j] - alphas[i])
                 else:
-                    l_ = max(0, alphas[j] + alphas[i] - c_value)
-                    h_ = min(c_value, alphas[j] + alphas[i])
-                if l_ == h_:
+                    L = max(0, alphas[j] + alphas[i] - C)
+                    H = min(C, alphas[j] + alphas[i])
+                if L == H:
                     print('L==H')
-                    continue  # 开始下一轮的for循环
-                # 步骤3：计算eta
-                eta = 2.0 * data_matrix[i, :] * data_matrix[j, :].T - data_matrix[i, :] * data_matrix[i, :].T
-                eta -= data_matrix[j, :] * data_matrix[j, :].T  # 式子写不下，太长了，于是分成两部分，与上式连在一起
-                if eta >= 0:
-                    print('eta >= 0')
-                    continue
-                # 步骤4：更新alpha[j]
-                alphas[j] -= label_matrix[j] * (e_i - e_j) / eta
-                # 步骤5：修剪alpha[j]
-                alphas[j] = clip_alpha(alphas[j], h_, l_)
+                    continue  # 第一个跳出条件，遍历下一个alpha进行更新
+                # 计算eta，eta是alpha[j]的最优修改量，
+                eta = 2.0 * X[i, :] * X[j, :].T - X[i, :] * X[i, :].T - X[j, :] * X[j, :].T
+                if eta == 0:
+                    print('eta == 0')
+                    continue  # 第二个跳出条件，eta为0时处理起来比较复杂
+                # 更新alpha[j]
+                alphas[j] -= y[j] * (e_i - e_j) / eta
+                # 修剪alpha[j]
+                alphas[j] = clip_alpha(alphas[j], H, L)
+                # 这里的0.00001就是我们上面提到的精度ε
                 if abs(alphas[j] - alpha_j_old) < 0.00001:
                     print('alpha[j] barely not changed ')
-                    continue
-                # 步骤6：更新alpha[i]
-                alphas[i] += label_matrix[j] * label_matrix[i] * (alpha_j_old - alphas[j])
+                    continue  # 第三个跳出条件，认为alpha_j已达到可接受范围内的最优
+                # 根据alpha[j]更新alpha[i]
+                alphas[i] += y[j] * y[i] * (alpha_j_old - alphas[j])
                 # 步骤7：更新b1和b2
-                b1 = b - e_i - label_matrix[i] * (alphas[i] - alpha_i_old) * \
-                     data_matrix[i, :] * data_matrix[i, :].T - \
-                     label_matrix[j] * (alphas[j] - alpha_j_old) * \
-                     data_matrix[i, :] * data_matrix[j, :].T
-                b2 = b - e_j - label_matrix[i] * (alphas[i] - alpha_i_old) * \
-                     data_matrix[i, :] * data_matrix[j, :].T - \
-                     label_matrix[j] * (alphas[j] - alpha_j_old) * \
-                     data_matrix[j, :] * data_matrix[j, :].T
-                # 步骤8：根据b1和b2更新b
-                if 0 < alphas[i] < c_value:
+                b1 = b - e_i - y[i] * (alphas[i] - alpha_i_old) * \
+                     X[i, :] * X[i, :].T - \
+                     y[j] * (alphas[j] - alpha_j_old) * \
+                     X[i, :] * X[j, :].T
+                b2 = b - e_j - y[i] * (alphas[i] - alpha_i_old) * \
+                     X[i, :] * X[j, :].T - \
+                     y[j] * (alphas[j] - alpha_j_old) * \
+                     X[j, :] * X[j, :].T
+                #  b的更新选择，之前也提过了
+                if 0 < alphas[i] < C:
                     b = b1
-                elif 0 < alphas[j] < c_value:
+                elif 0 < alphas[j] < C:
                     b = b2
                 else:
                     b = (b1 + b2) / 2.0
-                # 统计优化次数
+                # 统计优化次数，如果运行到这里，说明前面几个continue都没有跳出去，alpha[i]和alpha[j]完成了一次更新
                 alpha_pairs_changed += 1
                 print('n_iter:%d i:%d pairs changed %d' % (n_iter, i, alpha_pairs_changed))
-        # 更新迭代次数
+        # 只有在内循环未对任何一对alpha做修改时，n_iter+1；否则我们让n_iter回到0，继续内循环；
+        # 只有当内循环未修改任一alpha对，且连续maxIter次迭代，才会结束(以保证所有alpha得到了充分的修改)
         if alpha_pairs_changed == 0:
             n_iter += 1
         else:
