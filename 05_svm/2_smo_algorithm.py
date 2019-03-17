@@ -290,14 +290,15 @@ def clip_alpha(alpha_j, h, l):
     return alpha_j
 
 
-# 简化版的SMO函数的伪代码:                    【十分言简意赅的伪代码，可以看完整个代码，再来理解一边这里的伪代码】
+# 简化版的SMO函数的伪代码:                    【十分言简意赅的伪代码，可以看完整个代码之后，再来理解一遍这里的伪代码】
+
 # 1.创建一个alpha向量并且将其初始化为全0向量
 # 2.当迭代次数小于最大迭代次数时(外循环):
 #      对数据集中的每个数据向量(内循环):
 #          如果该数据向量可以被优化:
 #             随机选择另外一个数据向量
 #             同时优化这两个向量
-#             如果这两个向量都不需要被优化，continue下一个数据向量
+#             如果这两个向量都不需要被优化，遍历下一个数据向量
 #      如果所有向量都不需要被优化，增加迭代数目，继续下一次循环
 # 输入参数：数据集、类别标签、常数c、容错率、最大的循环迭代次数
 
@@ -306,13 +307,17 @@ def smo_simple(data_mat, class_labels, C, tolerance, max_iter):
     y = np.mat(class_labels).transpose()  # y为所有样本点对应的标签的集合
     b = 0  # 初始化b为0
     m, n = np.shape(X)
-    alphas = np.mat(np.zeros((m, 1)))  # 根据前面的学习，知道这里要初始化α为零向量.
-    n_iter = 0  # 记录迭代次数，n_iter只有在一轮内循环中，所有的变量对都没进行优化操作时，才会自增1
+    alphas = np.mat(np.zeros((m, 1)))
+    n_iter = 0  # n_iter只有在一轮内循环中，所有的αi变量都没有更新时，才会自增1
+    # 当所有的αi变量连续达到max_iter轮无任何更新的话，认为已经达到了收敛条件!
     while n_iter < max_iter:
         alpha_pairs_changed = 0  # 用于记录alpha是否已经进行优化
+        print('n_iter:', n_iter)
         for i in range(m):
             g_xi = float(np.multiply(alphas, y).T * (X * X[i, :].T)) + b  # 计算现有的模型对于样本xi的预测值
-            e_i = g_xi - float(y[i])  # 计算Ei的值
+            e_i = g_xi - float(y[i])  # Ei = g(xi) - yi
+            # y[i]*Ei < -tolerance 则需要alphas[i]增大，但是不能>=C，参考第6节(9)中终止条件的要求
+            # y[i]*Ei >  tolerance 则需要alphas[i]减小，但是不能<=0
             if ((y[i] * e_i < -tolerance) and (alphas[i] < C)) or (
                     (y[i] * e_i > tolerance) and (alphas[i] > 0)):
                 j = select_j_rand(i, m)  # 随机选择另一个与alpha[i]成对优化的alpha[j]，这里是简化版的，所有随机选择
@@ -331,19 +336,19 @@ def smo_simple(data_mat, class_labels, C, tolerance, max_iter):
                     H = min(C, alphas[j] + alphas[i])
                 if L == H:
                     print('L==H')
-                    continue  # 第一个跳出条件，遍历下一个alpha进行更新
-                # 计算eta，eta是alpha[j]的最优修改量，
-                eta = 2.0 * X[i, :] * X[j, :].T - X[i, :] * X[i, :].T - X[j, :] * X[j, :].T
+                    continue  # 第一个跳出条件，L==H，说明alpha[i]没有移动的范围了，跳出，遍历下一个alpha进行更新
+                # 计算eta，eta就是上面第3节(4)部分提到的(K11+K22-2K12)，用于后面计算αj_new_unc
+                eta = X[i, :] * X[i, :].T + X[j, :] * X[j, :].T - 2.0 * X[i, :] * X[j, :].T
                 if eta == 0:
                     print('eta == 0')
-                    continue  # 第二个跳出条件，eta为0时处理起来比较复杂
-                # 更新alpha[j]
-                alphas[j] -= y[j] * (e_i - e_j) / eta
+                    continue  # 第二个跳出条件，eta之后要作为分母，分母不能为0
+                # 更新alpha[j]，这里的alpha[j]是刚刚求导，导数为0时计算出来的，未经过修剪
+                alphas[j] += y[j] * (e_i - e_j) / eta
                 # 修剪alpha[j]
                 alphas[j] = clip_alpha(alphas[j], H, L)
                 # 这里的0.00001就是我们上面提到的精度ε
                 if abs(alphas[j] - alpha_j_old) < 0.00001:
-                    print('alpha[j] barely not changed ')
+                    print('alpha[j] 已经达到精度要求啦! ')
                     continue  # 第三个跳出条件，认为alpha_j已达到可接受范围内的最优
                 # 根据alpha[j]更新alpha[i]
                 alphas[i] += y[j] * y[i] * (alpha_j_old - alphas[j])
@@ -414,9 +419,12 @@ def get_w(data_mat, labels_mat, alphas):
 
 if __name__ == '__main__':
     data, labels = load_data_set('testSet.txt')
-    b_, alphas_ = smo_simple(data, labels, 0.6, 0.001, 2)
+    b_, alphas_ = smo_simple(data, labels, 0.6, 0.001, 40)
     # print("b is {}".format(b))
     # print("alphas:{}".format(alphas[alphas > 0]))
     w_ = get_w(data, labels, alphas_)
     print(w_, b_)
     plot_best_fit(data, labels, w_, b_)
+
+# 对simple_smo算法做一个小的分析
+#
