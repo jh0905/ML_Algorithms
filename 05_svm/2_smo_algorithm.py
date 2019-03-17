@@ -425,6 +425,3 @@ if __name__ == '__main__':
     w_ = get_w(data, labels, alphas_)
     print(w_, b_)
     plot_best_fit(data, labels, w_, b_)
-
-# 对simple_smo算法做一个小的分析
-#
