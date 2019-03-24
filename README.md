@@ -10,6 +10,12 @@
 
 # 记录本项目的工作日志
 
+### 2019/3/22 星期五
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;差不多一周没更新了...并不是因为我这几天偷懒了，而是最近一着忙着毕业论文开题报告，在网上搜刮各种paper看，当然效率也不是很高，只能说还是要坚持看下去吧。至于今天为啥更新了呢？是因为看论文实在无趣味，所以就奖励自己来学习机器学习算法啦，哈哈~
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;废话少说，今天主要看了机器学习的一个大杀器，ensemble learning，中文名叫集成学习，大概就是“三个臭皮匠赛过诸葛亮”的思想咯。集成学习有三种框架，一是bagging,千万不要以为是 bag(包)?! 完全无关，它是 bootstrap aggregating 的缩写，全称也不用管那么多，它的核心就是选取一大堆的强学习器，然后通过有放回采样的方式给每一个base model分配一个训练子集，最终多数投票或者取均值完成分类或回归任务，代表算法是RandomForest；二是boosting，可以理解为"learning from mistakes"，针对上一个模型中的错误，在下一个模型中进行改进，是一种迭代式的算法，它的base model是弱学习器.而boosting框架中，每个base model的权重是不一样的，最终通过加权的方式生成预测结果，代表算法是AdaBoost和GBDT；三是stacking，一般来说是一个两层结构，第一层是多个不同的强学习器，每一个学习器对样本生成一个预测结果，然后组成一个新的特征矩阵，输入给第二层，第二层的模型为简单模型，比如LogisticRegression，为的是防止过拟合，更多内容在1_introduction.py里。
+
 ### 2019/3/17 星期日
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;今天根据网上的一些文章，把前天简易版SMO算法中存疑的几个点理解了一下。
