@@ -4,7 +4,7 @@
  @author: Jiang Hui
  @language:Python 3.7.2 [GCC 7.3.0] :: Anaconda, Inc. on linux
  @time: 3/25/19 3:05 PM
- @desc:
+ @desc: 学习随机森林的实现原理、几种推广形式、训练样本特征重要性的计算以及算法的优缺点
 """
 
 """
