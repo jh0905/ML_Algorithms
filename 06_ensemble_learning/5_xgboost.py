@@ -124,7 +124,7 @@
             y_hat_i_0 = 0
             y_hat_i_1 = T_1(xi) = y_hat_i_0 + T_1(xi)
             y_hat_i_2 = T_1(xi) + T_2(xi) = y_hat_i_1 + T_2(xi)
-            y_hat_i_2 = T_1(xi) + T_2(xi) + T_3(xi) = y_hat_i_2 + T_3(xi)
+            y_hat_i_3 = T_1(xi) + T_2(xi) + T_3(xi) = y_hat_i_2 + T_3(xi)
              
                                            '''''
             y_hat_i_t = sum T_k(xi) （其中k=1,2,3,...,t） = y_hat_i_t-1 + T_t(xi)
