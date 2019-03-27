@@ -92,6 +92,96 @@
     过拟合；另一方面我们也希望Ω(θ)能够尽可能小，也就是使得权重参数减小，模型趋向于简单化，好处是模型泛化能力强，但是模型的偏差bias偏大，
     因此我们的目标函数是L(θ)+Ω(θ)，就是希望找到一组参数θ，能够兼顾模型的bias和variance.
         
- 3.CART回归树与集成学习
+ 3.xgboost目标函数的推导过程
+    
+    (1)模型
+        假设我们有K棵CART回归树，则对于训练样本xi，模型预测的y_hat_i为：
+        y_hat_i = T_1(xi) + T_2(xi) + T_3(xi) +...+ T_K(xi)   ，其中T_k(x)表示特征向量x在第k棵树中的输出值
+                
+                = sum T_k(xi) 其中k=1,2,3,...,K
+                
+    (2)参数
+        集成树模型中的参数，包括两方面，一是每一棵建立的回归树的结构，二是每一棵回归树叶子节点的分数.
+        所以我们要学习的不再是前面的权重向量，而是要学习每一棵子树的模型（function）
+        
+    (3)目标函数
+        Obj = Training LOSS + Complexity of the Tree
             
+            = sum l(yi,y_hat_i) + sum Ω(T_k)    （其中i=1,2,3,...,N  ，  k=1,2,3,...,K）
+        
+        Ω(T_k)看起来有些抽象，有以下几种定义的办法：
+            (a)回归树中节点的数量
+            (b)回归树的深度
+            (c)回归树中，叶子节点权重的L2范数
+    
+    (4)我们如何学习呢?
+        想想xgboost是针对GBDT算法的改进，所以我们不妨用求解GBDT的思想，试着求解xgboost.
+        
+        (a)Additive Training (Boosting)
+        
+            初始化y_hat_i_0 = 0，每轮训练一个模型（CART回归树），于是有： 【定义y_hat_i_j为样本xi在第j轮迭代后，模型的预测值】
+        
+            y_hat_i_0 = 0
+            y_hat_i_1 = T_1(xi) = y_hat_i_0 + T_1(xi)
+            y_hat_i_2 = T_1(xi) + T_2(xi) = y_hat_i_1 + T_2(xi)
+            y_hat_i_2 = T_1(xi) + T_2(xi) + T_3(xi) = y_hat_i_2 + T_3(xi)
+             
+                                           '''''
+            y_hat_i_t = sum T_k(xi) （其中k=1,2,3,...,t） = y_hat_i_t-1 + T_t(xi)
+        
+        (b)求解T_t(xi)
+        
+            我们知道在第t轮的迭代中，y_hat_i_t =  y_hat_i_t-1 + T_t(xi)
+            那么我们在第t轮的目标函数为：
+            Obj_t = sum l(yi,y_hat_i_t) + sum Ω(T_k)    （其中i=1,2,3,...,N ， k=1,2,3,...,t）
+                    
+                  = sum l(yi, y_hat_i_t-1 + T_t(xi) ) +  Ω(T_k) + constant （其中i=1,2,3,...,N）
+                  
+                                                                【前面k-1棵树的结构已经固定，于是用常量constant来代替】
+            
+            如果损失函数定义为平方损失的话，Obj_t即为：
+            
+            Obj_t = sum(yi - y_hat_i_t-1 - T_t(xi))^2  + Ω(T_k) + constant  （其中i=1,2,3,...,N）
+            
+            其中，yi是已知的常量，y_hat_i_t-1也是在前t-1轮中已知的预测值，于是我们不妨把这两个看成一个整体，即(yi - y_hat_i_t-1)，这个
+        也就是我们在boosting tree中提到的residual(残差)
+        
+            那么 (yi - y_hat_i_t-1 - T_t(xi))^2 = 2*(yi - y_hat_i_t-1)*T_t(xi) + T_t(xi)^2 + constant
+            
+            于是：
+            Obj_t = sum(2*(yi - y_hat_i_t-1)*T_t(xi) + T_t(xi)^2)  + Ω(T_k) + constant （其中i=1,2,3,...,N，常量+常量=常量）
+            
+        (c)用泰勒二阶展开式来近似估计损失l(yi,y_hat_i_t)【强推 https://www.zhihu.com/question/25627482/answer/313088784 理解泰勒】
+            
+            上面是将损失函数定义为平方损失时的情形，我们如何让模型更加通用呢?
+            
+            在GBDT的学习中，它提到的思想是用损失函数的负梯度值，来做残差(yi-y_hat_i)的近似估计，xgboost换了一个思想，它是把损失函数做二阶
+        泰勒展开，作为损失函数的近似估计.
+            
+            回顾一下， 函数f(x)二阶泰勒展开式为：
+                
+                f(x+Δx) = f(x) + f'(x)*(Δx) + 1/2 * f''(x) * (Δx)^2
+            
+            那么损失函数l(yi,x)二阶泰勒展开式为：     
+                
+                l(yi, x+Δx) = l + l' * (Δx) + 1/2 * l'' * (Δx)^2
+                        
+            用gi来表示l(yi,y_hat_i_t-1)对y_hat_i_t-1求一阶导，用hi来表示l(yi,y_hat_i_t-1)对y_hat_i_t-1求二阶导
+            
+            然后再用Δx = y_hat_i - y_hat_i_t-1 = T_t(x)，于是可得：
+            
+                l(yi,y_hat_i_t-1 + T_t(xi)) = l(yi,y_hat_i_t-1) + gi*T_t(xi) + 1/2 * hi*T_t(xi)^2
+                
+            于是，经过二阶泰勒展开之后，我们在第t轮的目标函数为：
+                
+                Obj_t = sum(l(yi,y_hat_i_t-1) + gi*T_t(xi) + 1/2 * hi*T_t(xi)^2) + Ω(T_k) + constant（其中i=1,2,3,...,N）
+                
+            于是我们又惊喜的发现，l(yi,y_hat_i_t-1)，不也是一个已知量吗?赶紧把它合并到后面的constant中去，得到最终的形式为：
+                
+                Obj_t = sum(gi*T_t(xi) + 1/2 * hi*T_t(xi)^2) + Ω(T_k) + constant（其中i=1,2,3,...,N）
+                
+            【整个世界从未如此的整洁有木有，哈哈哈~】
+        
+        (d)   
+                      
 """
