@@ -2,6 +2,7 @@
   <dictionary name="jianghui">
     <words>
       <w>gbdt</w>
+      <w>sgbt</w>
       <w>xgboost</w>
     </words>
   </dictionary>
