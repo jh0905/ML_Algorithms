@@ -69,7 +69,7 @@ def rand_c_cluster(data_mat, k):
 def k_means(data_mat, k):
     n_samples = data_mat.shape[0]
     centroids = rand_c_cluster(data_mat, k)
-    cluster_assignment = zeros((n_samples, 2))  # 第一列存样本属于哪一个簇，第二列为样本与簇中心的距离
+    cluster_assignment = zeros(n_samples)  # 第一列存样本属于哪一个簇，第二列为样本与簇中心的距离
     centroids_changed = True
     while centroids_changed:
         centroids_changed = False  # 一次迭代中，初始化centroids_changed没有变化，后面如果发生了变化，则置为True
@@ -81,11 +81,11 @@ def k_means(data_mat, k):
                 if dist < min_dist:
                     min_dist = dist
                     min_index = index
-            if cluster_assignment[j, 0] != min_index:
+            if cluster_assignment[j] != min_index:
                 centroids_changed = True
-                cluster_assignment[j] = min_index, min_dist ** 2  # 将当前节点距离最近的质心的index和距离的平方存进去
+                cluster_assignment[j] = min_index
         for index in range(k):
-            cluster_samples = data_mat[cluster_assignment[:, 0] == index]
+            cluster_samples = data_mat[cluster_assignment == index]
             centroids[index] = mean(cluster_samples, axis=0)
     return centroids, cluster_assignment
 
@@ -95,7 +95,7 @@ def plot_cluster_result(data_mat, centroids, cluster_assignment):
     plt.figure()
     cluster = []
     for i in range(4):
-        cluster.append(data_mat[cluster_assignment[:, 0] == i])
+        cluster.append(data_mat[cluster_assignment == i])
     plt.scatter(x=cluster[0][:, 0], y=cluster[0][:, 1], c='red', s=100, marker='v')
     plt.scatter(x=cluster[1][:, 0], y=cluster[1][:, 1], c='orange', s=100, marker='s')
     plt.scatter(x=cluster[2][:, 0], y=cluster[2][:, 1], c='green', s=100, marker='o')
