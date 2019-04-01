@@ -96,7 +96,6 @@ def plot_cluster_result(data_mat, centroids, cluster_assignment):
     cluster = []
     for i in range(4):
         cluster.append(data_mat[cluster_assignment[:, 0] == i])
-    print(cluster[0][:, 0])
     plt.scatter(x=cluster[0][:, 0], y=cluster[0][:, 1], c='red', s=100, marker='v')
     plt.scatter(x=cluster[1][:, 0], y=cluster[1][:, 1], c='orange', s=100, marker='s')
     plt.scatter(x=cluster[2][:, 0], y=cluster[2][:, 1], c='green', s=100, marker='o')
