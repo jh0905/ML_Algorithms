@@ -162,8 +162,15 @@
     
                 arg max sum sum P(z_j|x_i;θ) * log P(x_i,z_j;θ)/P(z_j|x_i;θ)
                 
-        实际上这一步就是我们EM算法的M步，E步呢？则是Q(z_j)的计算过程.我们一开始初始化一个θ，x_i是已知量，于是可以计算出Q(z_j)，M步再
-    来更新θ，E步又重新计算出Q(z_j)，周而复始，直至θ趋于稳定!
+        我们根据对数函数的性质，ln x/y = ln x - ln y ，P(z_j|x_i;θ) * log P(x_i,z_j;θ)/P(z_j|x_i;θ)可以展开为：
+        
+                P(z_j|x_i;θ) * log P(x_i,z_j;θ) - P(z_j|x_i;θ) * log P(x_i,z_j;θ)
+                
+        而我们在E步中，每轮有一个已知的θ_j，那么P(z_j|x_i;θ)的值是一个固定量，我们就可以把后面的式子去掉，最终我们的极大化任务为：
+        
+                arg max sum sum P(z_j|x_i;θ) * log P(x_i,z_j;θ)
+                
+        其中 sum P(z_j|x_i;θ) * log P(x_i,z_j;θ)可以理解为log P(x_i,z_j;θ)基于条件概率P(z_j|x_i;θ)分布的期望!
         
  3.EM算法的流程
  
